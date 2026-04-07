@@ -1,1 +1,6 @@
-
+services:
+  - type: web
+    name: converto-pro-artstudio
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
