@@ -209,4 +209,6 @@ def cleanup_old_files():
     except Exception as e:
         print(f"Erreur lors du nettoyage : {e}")
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Render utilise la variable d'environnement PORT
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
