@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converto Pro ArtStudio | The Art of Image Processing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel-bg: rgba(20, 20, 22, 0.7);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.06);
+            --text-main: #ffffff;
+            --text-muted: #88888e;
+            
+            
+            --p1: #a855f7;
+            --p1-dim: rgba(168, 85, 247, 0.15);
+            --p2: #22d3ee;
+            --success: #10b981;
+            
+            --ease: cubic-bezier(0.23, 1, 0.32, 1);
+            --font: 'Inter', sans-serif;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font);
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        
+       /* Fond animé optimisé - Intégration Unknow Studios Gradient */
+        body::before {
+            content: ''; 
+            position: absolute; 
+            width: 200%; /* Augmenté pour une rotation plus douce */
+            height: 200%; 
+            top: -50%; 
+            left: -50%;
+            
+            /* Intégration du dégradé demandé comme base profonde */
+            background-image: 
+                /* Tes halos lumineux existants (légèrement ajustés pour le nouveau fond) */
+                radial-gradient(circle at 10% 10%, #1e1b4b 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+                /* Le nouveau dégradé linéaire linéaire comme fond de scène */
+                /*linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #581c87 100%)*/;
+                
+            /* Animation existante maintenue, mais ralentie pour plus de subtilité */
+            animation: backgroundSlowRotate 10s linear infinite; 
+            z-index: -1;
+            filter: blur(30px); /* Ajout d'un léger flou pour l'ambiance cinématique */
+        }
+
+        @keyframes backgroundSlowRotate { 
+            from { transform: rotate(0deg); } 
+            to { transform: rotate(360deg); } 
+        }
+        .sidebar {
+            width: 380px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            z-index: 10;
+        }
+
+        .main-stage {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        
+        .brand {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 40px;
+        }
+        .brand-logo {
+            width: 28px; height: 28px; background: linear-gradient(135deg, var(--p1), var(--p2));
+            border-radius: 6px; position: relative;
+        }
+        .brand-logo::after { content:''; position: absolute; inset: 6px; background: var(--bg); border-radius: 3px; }
+        .brand h1 { font-size: 1.25rem; font-weight: 800; margin: 0; letter-spacing: -0.05em; }
+        .brand span { color: var(--text-muted); font-weight: 400; font-size: 0.8rem; margin-left: auto;}
+
+        .controls-wrapper {
+            flex: 1; overflow-y: auto; padding-right: 10px;
+            scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+        }
+        .controls-wrapper::-webkit-scrollbar { width: 4px; }
+        .controls-wrapper::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .control-section { margin-bottom: 30px; animation: fadeInUp 0.5s var(--ease) both; }
+        .control-section h2 { 
+            font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); 
+            letter-spacing: 0.1em; font-weight: 700; margin-bottom: 15px; 
+            display: flex; align-items: center; gap: 8px;
+        }
+        .control-section h2::after { content:''; flex: 1; height: 1px; background: var(--border); }
+
+        
+        .group-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+        label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; font-weight: 500;}
+        
+        select, input[type="number"] {
+            width: 100%; padding: 12px; background: var(--card-bg); 
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text-main);
+            font-family: var(--font); font-size: 0.9rem; transition: 0.2s;
+        }
+        select:hover, input[type="number"]:hover { border-color: rgba(255,255,255,0.15); }
+        select:focus, input[type="number"]:focus { border-color: var(--p1); box-shadow: 0 0 0 2px var(--p1-dim); }
+
+        /* Custom Sliders */
+        .slider-control { margin-bottom: 12px; }
+        .slider-header { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;}
+        .slider-val { color: var(--text-main); font-weight: 600; font-variant-numeric: tabular-nums;}
+
+        input[type="range"] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; background: var(--border); border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -6px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5); transition: 0.2s var(--ease);
+        }
+        input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.2); background: var(--p2); }
+
+       
+        .toggle-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .toggle-item:hover { background: rgba(255,255,255,0.05); }
+        .toggle-item span { font-size: 0.85rem; font-weight: 500; }
+
+        input[type="checkbox"] {
+            -webkit-appearance: none; appearance: none; width: 34px; height: 18px; background: var(--border);
+            border-radius: 10px; position: relative; cursor: pointer; transition: 0.3s var(--ease);
+        }
+        
+        input[type="checkbox"]:checked { background: var(--p1); }
+        input[type="checkbox"]::after {
+            content:''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+            background: white; border-radius: 50%; transition: 0.3s var(--ease);
+        }
+        input[type="checkbox"]:checked::after { transform: translateX(16px); }
+
+        /* Action Buttons */
+        .action-zone { margin-top: auto; padding-top: 20px; }
+        
+        #processBtn {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, var(--p1), var(--p2));
+            color: #000; font-weight: 700; font-size: 1rem; cursor: pointer;
+            transition: 0.3s var(--ease);
+            box-shadow: 0 10px 20px -5px rgba(168, 85, 247, 0.4);
+            letter-spacing: -0.02em;
+        }
+        #processBtn:hover { transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(168, 85, 247, 0.5); }
+        #processBtn:active { transform: translateY(1px); }
+        #processBtn:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; box-shadow: none; transform: none; }
+
+        #downloadBtn {
+            display: none; width: 100%; padding: 14px; margin-top: 10px; text-align: center; text-decoration: none;
+            border-radius: 12px; background: var(--card-bg); border: 1px solid var(--border);
+            color: var(--success); font-weight: 600; font-size: 0.9rem; transition: 0.2s;
+        }
+        #downloadBtn:hover { background: rgba(16, 185, 129, 0.1); border-color: var(--success); }
+
+        /* Nouveau upload */
+        #newUploadBtn {
+            display: none; width: 100%; padding: 12px; margin-top: 10px; text-align: center; text-decoration: none;
+            border-radius: 12px; background: transparent; border: 1px solid var(--border);
+            color: var(--text-main); font-weight: 600; font-size: 0.9rem; transition: 0.15s;
+        }
+        #newUploadBtn:hover { background: rgba(255,255,255,0.02); }
+
+        /* --- MAIN STAGE CONTENT --- */
+        .stage-container {
+            width: 100%; height: 100%; max-width: 1000px; max-height: 800px;
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 24px;
+            position: relative; overflow: hidden; display: flex;
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.8);
+        }
+
+        /* Zone de Drop Initial */
+        #dropZone {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 5;
+            cursor: pointer; transition: 0.3s var(--ease);
+        }
+        #dropZone.has-file { opacity: 0; pointer-events: none; }
+        #dropZone.dragover { background: var(--p1-dim); border: 2px dashed var(--p1); }
+        
+        .drop-icon-wrap {
+            position: relative; margin-bottom: 20px;
+        }
+        .drop-icon-bg {
+            position: absolute; inset: -15px; background: var(--p1); filter: blur(20px); opacity: 0.2; border-radius: 50%;
+        }
+
+        #dropZone p { color: var(--text-muted); font-size: 1rem; text-align: center; line-height: 1.5; margin: 0;}
+        #dropZone b { color: var(--text-main); font-weight: 600; }
+
+        
+        .comparator-wrap {
+            width: 100%; height: 100%; display: none; position: relative; user-select: none;
+        }
+        .comparator-wrap.active { display: block; animation: fadeIn 0.6s var(--ease); }
+
+        .image-pane {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            padding: 20px;
+        }
+        .image-pane img { 
+            max-width: 100%; max-height: 100%; object-fit: contain; 
+            border-radius: 8px;
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+            /* Appliqué pour preview CSS instantanée */
+            transition: filter 0.2s var(--ease); 
+        }
+
+        #paneAfter { width: 50%; border-right: 1px solid white; z-index: 2; }
+        #paneBefore { z-index: 1; }
+        
+        /* Badges */
+        .status-badge {
+            position: absolute; bottom: 20px; padding: 6px 12px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+            backdrop-filter: blur(10px); z-index: 3;
+        }
+        #paneBefore .status-badge { left: 20px; background: rgba(0,0,0,0.5); color: var(--text-muted); border: 1px solid var(--border); }
+        #paneAfter .status-badge { right: 20px; background: var(--p1-dim); color: var(--p1); border: 1px solid var(--p1); display: none;} /* Show only after process */
+
+        /* Handle de drag */
+        #compareHandle {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: white;
+            transform: translateX(-50%); cursor: ew-resize; z-index: 10;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        #compareHandle::after {
+            content:''; position: absolute; top: 50%; left: 50%; width: 40px; height: 40px;
+            border-radius: 50%; background: white; transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-3-3 3-3"/><path d="m6 9 3 3-3 3"/></svg>');
+            background-repeat: no-repeat; background-position: center;
+        }
+
+        /* Overlay de chargement pro */
+        #loaderOverlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            z-index: 20; display: none; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #loaderOverlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--p2);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+
+        /* Animations */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        /* Correction du contraste pour la liste déroulante */
+select option, 
+select optgroup {
+    background-color: #18181b; 
+    color: #ffffff;            
+    padding: 10px;
+}
+
+
+select {
+    width: 100%; 
+    padding: 12px; 
+    background: var(--card-bg); 
+    border: 1px solid var(--border); 
+    border-radius: 8px; 
+    color: var(--text-main); /* Force l'écriture en blanc sur le bouton */
+    font-family: var(--font); 
+    font-size: 0.9rem; 
+    appearance: none; /* Optionnel : permet de mieux styliser sur certains navigateurs */
+}
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="brand">
+    <div class="brand-logo"></div>
+    <div>
+        <h1 style="margin-bottom: 2px;">Converto <span style="color:var(--p2)"> Pro</span></h1>
+        <div style="font-size: 0.65rem; color: var(--p1); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">
+            Unknow Studios Interactive
+        </div>
+    </div>
+</div>
+
+    <form id="proForm" class="controls-wrapper">
+        <input type="file" id="fileInput" name="file" hidden accept="image/*">
+        
+        <section class="control-section" style="animation-delay: 0.1s">
+            <h2>Format d'Export</h2>
+            <select name="format" id="formatSelect">
+                <optgroup label="Vectoriel">
+                    <option value="svg">SVG (Qualité Maître)</option>
+                </optgroup>
+                <optgroup label="Raster (Standard)">
+                    <option value="webp" selected>WebP (Optimisé Web)</option>
+                    <option value="png">PNG (Sans perte)</option>
+                    <option value="jpg">JPEG (Photo)</option>
+                </optgroup>
+                <optgroup label="Spécial">
+                    <option value="ico">ICO (Icône Windows Multi-res)</option>
+                </optgroup>
+            </select>
+        </section>
+
+        <section class="control-section" style="animation-delay: 0.2s">
+            <h2>Géométrie</h2>
+            <div class="group-row">
+                <div>
+                    <label>Largeur (px)</label>
+                    <input type="number" name="resizeW" placeholder="Auto">
+                </div>
+                <div>
+                    <label>Hauteur (px)</label>
+                    <input type="number" name="resizeH" placeholder="Auto">
+                </div>
+            </div>
+            <div class="slider-control">
+                <div class="slider-header"><span>Rotation</span><span class="slider-val" id="valRotate">0°</span></div>
+                <input type="range" name="rotate" min="0" max="360" value="0" step="90">
+            </div>
+            <div class="group-row">
+                <label class="toggle-item"><span>Miroir H</span><input type="checkbox" name="flipH"></label>
+                <label class="toggle-item"><span>Miroir V</span><input type="checkbox" name="flipV"></label>
+            </div>
+        </section>
+
+        <section class="control-section" style="animation-delay: 0.3s">
+            <h2>Colorimétrie & Filtres</h2>
+            
+            <div class="slider-control">
+                <div class="slider-header"><span>Luminosité</span><span class="slider-val preview-calc" id="valBrightness" data-unit="" data-base="1">100%</span></div>
+                <input type="range" class="css-previewer" id="inputBrightness" name="brightness" min="0" max="2" value="1" step="0.01" data-filter="brightness">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-header"><span>Contraste</span><span class="slider-val preview-calc" id="valContrast" data-unit="" data-base="1">100%</span></div>
+                <input type="range" class="css-previewer" id="inputContrast" name="contrast" min="0" max="2" value="1" step="0.01" data-filter="contrast">
+            </div>
+
+            <div class="slider-control">
+                <div class="slider-header"><span>Saturation</span><span class="slider-val preview-calc" id="valSaturation" data-unit="" data-base="1">100%</span></div>
+                <input type="range" class="css-previewer" id="inputSaturation" name="saturation" min="0" max="2" value="1" step="0.01" data-filter="saturate">
+            </div>
+
+            <div class="slider-control">
+                <div class="slider-header"><span>Netteté (Serveur)</span><span class="slider-val" id="valSharp">100%</span></div>
+                <input type="range" name="sharpness" min="0" max="2" value="1" step="0.01">
+            </div>
+            
+            <div class="slider-control">
+                <div class="slider-header"><span>Flou Gaussien</span><span class="slider-val preview-calc" id="valBlur" data-unit="px" data-base="0">0px</span></div>
+                <input type="range" class="css-previewer" id="inputBlur" name="blur" min="0" max="10" value="0" step="0.1" data-filter="blur">
+            </div>
+
+            <label class="toggle-item"><span>Niveaux de Gris</span><input type="checkbox" name="grayscale" class="css-previewer" data-filter="grayscale"></label>
+            <label class="toggle-item"><span>Inverser Couleurs</span><input type="checkbox" name="invert" class="css-previewer" data-filter="invert"></label>
+        </section>
+
+        <section class="control-section" id="svgSettings" style="display:none; border: 1px solid var(--p1); padding: 15px; border-radius: 12px; background: var(--p1-dim);">
+            <h2 style="color:var(--p1)">Paramètres Vectorisation</h2>
+            <div class="slider-control">
+                <div class="slider-header"><span>Précision Couleurs</span><span class="slider-val">8</span></div>
+                <input type="range" name="svgColorPrec" min="1" max="8" value="8">
+            </div>
+        </section>
+
+    </form>
+
+    <div class="action-zone">
+        <button type="submit" form="proForm" id="processBtn" disabled>Traiter l'image</button>
+        <div id="resultInfo" style="display:none; text-align:center; margin-top:10px; font-size:0.8rem; color:var(--text-muted)">
+            Prêt : <span id="outSize" style="color:var(--success); font-weight:600"></span>
+        </div>
+        <a href="#" id="downloadBtn" download>Télécharger le chef-d'œuvre</a>
+        <button id="newUploadBtn" type="button">Nouveau fichier</button>
+    </div>
+    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--text-muted); text-align: center;">
+    &copy; 2026 <b>Unknow Studios Interactive</b><br>
+    Propulsé par la technologie Converto Engine
+    </div>
+    <button onclick="toggleAbout()" style="background:none; border:none; color:var(--p2); cursor:pointer; font-size:0.8rem; text-decoration:underline; margin-top:10px;">À propos de l'auteur</button>
+
+<div id="aboutModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--panel-bg); border:1px solid var(--p1); border-radius:24px; max-width:600px; padding:40px; position:relative; backdrop-filter:blur(20px);">
+        <button onclick="toggleAbout()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+        
+        <h2 style="color:var(--p1); margin-bottom:10px;">Unknow Studios Interactive</h2>
+        <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.6;">
+            Fondé par <b><i>unknown coder</i></b>, un développeur passionné de 16 ans basé au Cameroun. 
+            Ce studio est né de la volonté de créer des expériences numériques uniques, alliant développement de jeux vidéo et outils de production logicielle.
+        </p>
+
+        <h3 style="color:var(--p2); font-size:1rem; margin-top:20px;">Notre Vision</h3>
+        <ul style="color:var(--text-muted); font-size:0.85rem; line-height:1.6; padding-left:20px;">
+            <li><b>Optimisation :</b> Créer des logiciels performants capables de tourner sur du matériel accessible.</li>
+            <li><b>Narration :</b> Développer des univers immersifs, comme le projet.</li>
+            <li><b>Indépendance :</b> Porter la voix du développement "One Man Show" sur la scène internationale.</li>
+        </ul>
+
+        <div style="margin-top:30px; padding:15px; background:rgba(255,255,255,0.03); border-radius:12px; font-style:italic; font-size:0.8rem; border-left:3px solid var(--p1);">
+            "Le code est une forme d'art, et chaque pixel raconte une histoire."
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAbout() {
+    const modal = document.getElementById('aboutModal');
+    modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
+}
+</script>
+</aside>
+
+<main class="main-stage">
+    <div class="stage-container">
+        
+        <div id="loaderOverlay">
+            <div class="spinner"></div>
+            <p style="color:var(--p2); font-weight:600; margin:0; letter-spacing:0.05em">Développement de la pellicule numérique...</p>
+        </div>
+
+        <div id="dropZone">
+            <div class="drop-icon-wrap">
+                <div class="drop-icon-bg"></div>
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:var(--p1);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:var(--p2);stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <p>Glissez votre image source ici</p>
+            <p>ou <b>parcourez vos dossiers</b></p>
+            <p style="font-size:0.75rem; margin-top:15px">PNG, JPG, WEBP jusqu'à 32 Mo</p>
+        </div>
+
+        <div class="comparator-wrap" id="comparator">
+            <div class="image-pane" id="paneAfter">
+                <img id="imgAfter" alt="Résultat">
+                <div class="status-badge" id="badgeAfter">Résultat .WEBP</div>
+            </div>
+            <div class="image-pane" id="paneBefore">
+                <img id="imgBefore" alt="Source">
+                <div class="status-badge">Source originale</div>
+            </div>
+            <div id="compareHandle"></div>
+        </div>
+    </div>
+</main>
+
+<script>
+    
+    const DOM = {
+        form: document.getElementById('proForm'),
+        fileInput: document.getElementById('fileInput'),
+        dropZone: document.getElementById('dropZone'),
+        comparator: document.getElementById('comparator'),
+        paneAfter: document.getElementById('paneAfter'),
+        handle: document.getElementById('compareHandle'),
+        imgBefore: document.getElementById('imgBefore'),
+        imgAfter: document.getElementById('imgAfter'),
+        processBtn: document.getElementById('processBtn'),
+        downloadBtn: document.getElementById('downloadBtn'),
+        loader: document.getElementById('loaderOverlay'),
+        formatSelect: document.getElementById('formatSelect'),
+        svgSettings: document.getElementById('svgSettings'),
+        badgeAfter: document.getElementById('badgeAfter'),
+        outSize: document.getElementById('outSize'),
+        resultInfo: document.getElementById('resultInfo')
+    };
+
+    let isDraggingHandle = false;
+
+    // --- INITIALISATION & DRAG & DROP ---
+    DOM.dropZone.onclick = () => DOM.fileInput.click();
+    
+    // Setup Drag & Drop events
+    ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+        DOM.dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    });
+
+    DOM.dropZone.addEventListener('dragover', () => DOM.dropZone.classList.add('dragover'));
+    DOM.dropZone.addEventListener('dragleave', () => DOM.dropZone.classList.remove('dragover'));
+    DOM.dropZone.addEventListener('drop', (e) => {
+        DOM.dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        handleFileSelection(file);
+    });
+
+    DOM.fileInput.onchange = (e) => handleFileSelection(e.target.files[0]);
+    
+    function resetUploader() {
+        // 1. Réinitialiser le formulaire
+        DOM.fileInput.value = ""; 
+        
+        // 2. Masquer les éléments de résultat
+        DOM.resultInfo.style.display = 'none';
+        DOM.downloadBtn.style.display = 'none';
+        DOM.badgeAfter.style.display = 'none';
+        
+        // 3. Remettre le bouton de traitement à l'état initial
+        DOM.processBtn.disabled = false;
+        DOM.processBtn.innerText = "Lancer le traitement Master";
+        
+        // 4. Réinitialiser le comparateur (slider à 50%)
+        moveComparator(50);
+        
+        // 5. Optionnel : Remettre une image par défaut ou vider les src
+        DOM.imgBefore.src = "";
+        DOM.imgAfter.src = "";
+    }
+    function handleFileSelection(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            alert("Veuillez sélectionner un fichier image valide.");
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        DOM.imgBefore.src = url;
+        DOM.imgAfter.src = url; // Initialement identique
+        
+        DOM.dropZone.classList.add('has-file');
+        DOM.comparator.classList.add('active');
+        DOM.processBtn.disabled = false;
+        DOM.processBtn.innerText = "Traiter l'image";
+        DOM.downloadBtn.style.display = 'none';
+        DOM.resultInfo.style.display = 'none';
+        
+        resetCssPreview();
+        initializeComparator();
+    }
+
+    // --- INTERACTIVITÉ UI ---
+
+    // 1. Mise à jour des labels de sliders
+    DOM.form.addEventListener('input', (e) => {
+        if (e.target.type === 'range') {
+            const valDisplay = e.target.closest('.slider-control').querySelector('.slider-val');
+            if (valDisplay) {
+                if (valDisplay.classList.contains('preview-calc')) {
+                    // Calcul spécial pour preview (ex: 1.0 -> 100%)
+                    const unit = valDisplay.dataset.unit || "";
+                    const base = parseFloat(valDisplay.dataset.base);
+                    let finalVal;
+                    if (base === 1) finalVal = Math.round(e.target.value * 100) + "%";
+                    else finalVal = e.target.value + unit;
+                    valDisplay.innerText = finalVal;
+                } else {
+                    valDisplay.innerText = e.target.value + (e.target.name === 'rotate' ? '°' : '');
+                }
+            }
+        }
+
+        // Afficher réglages SVG si besoin
+        if (e.target === DOM.formatSelect) {
+            DOM.svgSettings.style.display = e.target.value === 'svg' ? 'block' : 'none';
+        }
+    });
+
+    // 2. PREVIEW CSS INSTANTANÉE (Micro-interaction Pro)
+    // Permet de voir l'effet approximatif des filtres avant de lancer le calcul serveur
+    const previewInputs = document.querySelectorAll('.css-previewer');
+    previewInputs.forEach(input => {
+        input.addEventListener('input', updateCssPreview);
+    });
+
+    function updateCssPreview() {
+        let filters = [];
+        previewInputs.forEach(input => {
+            const filterType = input.dataset.filter;
+            if (!filterType) return;
+
+            if (input.type === 'range') {
+                if (parseFloat(input.value) !== parseFloat(input.getAttribute('value'))) { // Si différent de l'original
+                    let val = input.value;
+                    if (filterType === 'blur') val += 'px';
+                    filters.push(`${filterType}(${val})`);
+                }
+            } else if (input.type === 'checkbox' && input.checked) {
+                filters.push(`${filterType}(100%)`);
+            }
+        });
+        
+        // Appliquer filtres CSS à l'image 'AFTER'
+        DOM.imgAfter.style.filter = filters.length ? filters.join(' ') : 'none';
+        
+        // Forcer le comparateur à montrer le 'After' pour voir le changement
+        if(filters.length > 0) moveComparator(70); 
+    }
+
+    function resetCssPreview() {
+        DOM.imgAfter.style.filter = 'none';
+        moveComparator(50);
+    }
+
+    // --- LOGIQUE DU COMPARATEUR (Slider Avant/Après) ---
+    function initializeComparator() {
+        moveComparator(50); // Reset center
+
+        // Mouse events
+        DOM.handle.addEventListener('mousedown', startDragging);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', stopDragging);
+        
+        // Touch events
+        DOM.handle.addEventListener('touchstart', startDragging);
+        window.addEventListener('touchmove', drag);
+        window.addEventListener('touchend', stopDragging);
+    }
+
+    function startDragging(e) { isDraggingHandle = true; DOM.handle.style.background = 'var(--p2)'; }
+    function stopDragging() { isDraggingHandle = false; DOM.handle.style.background = 'white'; }
+
+    function drag(e) {
+        if (!isDraggingHandle) return;
+        
+        const rect = DOM.comparator.getBoundingClientRect();
+        let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        
+        let pct = (x / rect.width) * 100;
+        moveComparator(pct);
+    }
+
+    function moveComparator(pct) {
+        pct = Math.max(0, Math.min(100, pct)); // Clamp
+        DOM.handle.style.left = `${pct}%`;
+        DOM.paneAfter.style.width = `${pct}%`;
+    }
+
+    // --- SOUMISSION & TRAITEMENT SERVEUR ---
+    DOM.form.onsubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!DOM.fileInput.files.length) return;
+
+        // Collecte des paramètres Pro
+        const formData = new FormData(DOM.form);
+        const settings = {};
+        
+        // Convertit FormData en objet JSON pur pour les settings pro
+        formData.forEach((value, key) => {
+            if (key === 'file') return; // On gère le fichier à part
+            // Gestion des checkboxes
+            if (DOM.form.elements[key] && DOM.form.elements[key].type === 'checkbox') {
+                settings[key] = true; // Si présent dans FormData, c'est que c'est coché
+            } else {
+                settings[key] = value;
+            }
+        });
+
+        const finalFormData = new FormData();
+        finalFormData.append('file', DOM.fileInput.files[0]);
+        finalFormData.append('settings', JSON.stringify(settings));
+
+        // UI State: Loading
+        DOM.loader.classList.add('active');
+        DOM.processBtn.disabled = true;
+        DOM.processBtn.innerText = "Calcul quantique en cours...";
+        DOM.downloadBtn.style.display = 'none';
+
+        try {
+            const response = await fetch('/process', { method: 'POST', body: finalFormData });
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error || "Erreur inconnue");
+
+            // UI State: Success
+            // On désactive la preview CSS car on a le vrai résultat
+            previewInputs.forEach(input => input.removeEventListener('input', updateCssPreview));
+            DOM.imgAfter.style.filter = 'none'; 
+            
+            // Chargement de la nouvelle image
+            DOM.imgAfter.src = data.url + "?t=" + Date.now(); // Cache bust
+            
+            DOM.imgAfter.onload = () => {
+                DOM.loader.classList.remove('active');
+                
+                // Révéler le résultat avec style
+                moveComparator(100); 
+                setTimeout(() => moveComparator(50), 800);
+
+                // Update infos
+                const ext = data.name.split('.').pop().toUpperCase();
+                DOM.badgeAfter.innerText = `Résultat .${ext}`;
+                DOM.badgeAfter.style.display = 'block';
+                DOM.outSize.innerText = data.size;
+                DOM.resultInfo.style.display = 'block';
+
+                DOM.downloadBtn.href = data.url;
+                DOM.downloadBtn.innerText = `Télécharger le Master ${ext}`;
+                DOM.downloadBtn.style.display = 'block';
+                showNewUpload();
+                
+                DOM.processBtn.disabled = false;
+                DOM.processBtn.innerText = "Recalculer";
+                
+                // Réactiver preview si settings changent
+                previewInputs.forEach(input => input.addEventListener('input', updateCssPreview));
+            };
+
+        } catch (err) {
+            DOM.loader.classList.remove('active');
+            alert("Erreur ProStudio : " + err.message);
+            DOM.processBtn.disabled = false;
+            DOM.processBtn.innerText = "Réessayer le traitement";
+        }
+    };
+
+    // --- AUTO-RELOAD (SSE) ---
+    // Établit une connexion Server-Sent Events pour recevoir les nouveautés serveur
+    (function startSSE(){
+        if (!window.EventSource) return;
+        try {
+            const es = new EventSource('/stream');
+            es.onmessage = (e) => {
+                try{
+                    const j = JSON.parse(e.data);
+                    if(!j.name) return;
+                    DOM.downloadBtn.href = j.url + '?t=' + Date.now();
+                    const ext = j.name.split('.').pop().toUpperCase();
+                    DOM.downloadBtn.innerText = `Télécharger le Master ${ext}`;
+                    DOM.downloadBtn.style.display = 'block';
+                    DOM.badgeAfter.innerText = `Résultat .${ext}`;
+                    DOM.badgeAfter.style.display = 'block';
+                    DOM.imgAfter.src = j.url + '?t=' + Date.now();
+                    DOM.resultInfo.style.display = 'block';
+                    DOM.outSize.innerText = j.size || '';
+                    DOM.loader.classList.remove('active');
+                    DOM.processBtn.disabled = false;
+                    DOM.processBtn.innerText = 'Recalculer';
+                    showNewUpload();
+                }catch(err){
+                    // ignore malformed messages
+                }
+            };
+            es.onerror = (err) => {
+                // Browser will try reconnecting; keep silent to avoid noisy logs
+            };
+        } catch(err) {
+            // If SSE isn't available or an immediate error occurs, do nothing
+        }
+    })();
+
+    // --- RESET POUR NOUVEL UPLOAD ---
+    const newUploadBtn = document.getElementById('newUploadBtn');
+    function resetForNewUpload(){
+        // Clear file input so same file can be reselected
+        DOM.fileInput.value = '';
+
+        // Reset form controls
+        DOM.form.reset();
+
+        // Hide download and result info
+        DOM.downloadBtn.style.display = 'none';
+        DOM.resultInfo.style.display = 'none';
+        DOM.outSize.innerText = '';
+
+        // Reset images and comparator
+        DOM.imgBefore.src = '';
+        DOM.imgAfter.src = '';
+        DOM.comparator.classList.remove('active');
+        DOM.dropZone.classList.remove('has-file');
+
+        // Reset badges and loader
+        DOM.badgeAfter.style.display = 'none';
+        DOM.loader.classList.remove('active');
+
+        // Reset process button
+        DOM.processBtn.disabled = true;
+        DOM.processBtn.innerText = "Traiter l'image";
+
+        // Show the new upload button only when appropriate
+        DOM.newUploadVisible = false;
+        newUploadBtn.style.display = 'none';
+
+        // Re-enable preview inputs listeners
+        previewInputs.forEach(input => {
+            input.removeEventListener('input', updateCssPreview);
+            input.addEventListener('input', updateCssPreview);
+        });
+    }
+
+    // Hook the new upload button
+    if(newUploadBtn){
+        newUploadBtn.addEventListener('click', resetForNewUpload);
+    }
+
+    // When a file is selected or a new result is detected, show the newUploadBtn
+    function showNewUpload(){
+        if(newUploadBtn) newUploadBtn.style.display = 'block';
+    }
+
+    // Ensure showNewUpload is called when a file is selected
+    DOM.fileInput.addEventListener('change', () => {
+        if(DOM.fileInput.files && DOM.fileInput.files.length) showNewUpload();
+    });
+   
+</script>
+
+</body>
+</html>
