@@ -119,39 +119,39 @@ def process_image():
             img = img.filter(ImageFilter.GaussianBlur(radius=float(params['blur'])))
 
         # If SVG requested, vectorize a prepared PNG so raster effects are baked in
+       # --- BLOC SVG SÉCURISÉ POUR RENDER ---
         if output_format == 'svg':
             if not _HAS_VTRACER:
-                return jsonify({"error": "vtracer non installé sur le serveur. Installez la dépendance pour la vectorisation SVG."}), 500
+                return jsonify({"error": "Moteur SVG non disponible sur le serveur"}), 500
 
             temp_png = os.path.join(UPLOAD_FOLDER, f"temp_vtrace_{timestamp}.png")
             img.save(temp_png, format='PNG')
+            
             try:
+                # Utilisation des paramètres par défaut si absents des params
                 vtracer.convert_image_to_svg_py(
                     temp_png,
                     output_path,
-                    colormode=params.get('svgColorMode', 'color'),
-                    mode=params.get('svgCurveMode', 'spline'),
-                    filter_speckle=int(params.get('svgSpeckle', 4)),
-                    color_precision=int(params.get('svgColorPrec', 8)),
-                    layer_difference=int(params.get('svgLayerDiff', 16))
+                    colortype = params.get('svgColorMode', 'color'),
+                    mode = params.get('svgCurveMode', 'spline'),
+                    filter_speckle = int(params.get('svgSpeckle', 4)),
+                    color_precision = int(params.get('svgColorPrec', 6)), # Précision 6 est plus stable que 8 sur Render
+                    layer_difference = int(params.get('svgLayerDiff', 16))
                 )
+            except Exception as v_err:
+                print(f"Erreur VTRACER : {str(v_err)}")
+                return jsonify({"error": f"Erreur de vectorisation : {str(v_err)}"}), 500
             finally:
                 if os.path.exists(temp_png):
-                    try:
-                        os.remove(temp_png)
-                    except Exception:
-                        pass
+                    os.remove(temp_png)
 
-            # Remove original upload
-            if os.path.exists(input_path):
-                try:
-                    os.remove(input_path)
-                except Exception:
-                    pass
-
+            # Calcul de la taille et réponse
             size_kb = os.path.getsize(output_path) // 1024
-            return jsonify({"url": f"/static/outputs/{output_filename}", "name": output_filename, "size": f"{size_kb} KB"})
-
+            return jsonify({
+                "url": f"/static/outputs/{output_filename}", 
+                "name": output_filename, 
+                "size": f"{size_kb} KB"
+            })
         # Raster export (PNG, WEBP, JPG, ICO...)
         save_args = {}
         img_to_save = img
