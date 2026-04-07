@@ -1,4 +1,4 @@
 Flask
 Pillow
-vtracer==0.6.0
+vtracer
 gunicorn
